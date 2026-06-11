@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>QA Test Evidence Tracker</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        width: 420px;
+        background: #f8f9fa;
+        color: #222;
+        font-size: 13px;
+    }
+    .header {
+        background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+        color: white;
+        padding: 14px 16px;
+    }
+    .header h1 { font-size: 15px; font-weight: 700; }
+    .header .subtitle { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+
+    .tabs {
+        display: flex;
+        background: white;
+        border-bottom: 1px solid #ddd;
+    }
+    .tab-btn {
+        flex: 1;
+        padding: 10px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        border-bottom: 3px solid transparent;
+        transition: all 0.15s;
+    }
+    .tab-btn:hover { background: #f0f0f0; }
+    .tab-btn.active {
+        color: #0066cc;
+        border-bottom-color: #0066cc;
+    }
+
+    .tab-content {
+        display: none;
+        padding: 14px 16px;
+        max-height: 540px;
+        overflow-y: auto;
+    }
+    .tab-content.active { display: block; }
+
+    label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #555;
+        margin-bottom: 4px;
+    }
+    input[type="text"], textarea, select {
+        width: 100%;
+        padding: 7px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: inherit;
+        margin-bottom: 10px;
+        background: white;
+    }
+    textarea { resize: vertical; font-family: inherit; }
+    textarea.steps-input { min-height: 90px; font-family: 'Consolas', monospace; }
+    textarea.short { min-height: 56px; }
+
+    .form-row {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 0;
+    }
+    .form-row.col-2 { grid-template-columns: 1fr 1fr; }
+    .form-row.col-id { grid-template-columns: 100px 1fr; }
+    .form-row .form-group { margin-bottom: 0; }
+    .form-row .form-group input,
+    .form-row .form-group select { margin-bottom: 0; }
+    .form-group { margin-bottom: 10px; }
+
+    .section-divider {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #0066cc;
+        letter-spacing: 0.5px;
+        padding: 6px 0 4px;
+        border-top: 1px solid #e0e0e0;
+        margin: 4px 0 8px;
+    }
+
+    .btn {
+        padding: 9px 14px;
+        border: none;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #0066cc; color: white; width: 100%; }
+    .btn-primary:hover:not(:disabled) { background: #0052a3; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-success:hover:not(:disabled) { background: #218838; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-warning { background: #ffc107; color: #222; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    .message {
+        padding: 10px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-top: 12px;
+        display: none;
+    }
+    .message.success { display: block; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .message.error   { display: block; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .message.warning { display: block; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    .message.info    { display: block; background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+    .step-card {
+        background: white;
+        border-radius: 6px;
+        padding: 14px;
+        border-left: 4px solid #0066cc;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    #stepNumber { font-size: 16px; font-weight: 700; color: #0066cc; margin-bottom: 6px; }
+    #stepText { font-size: 13px; line-height: 1.4; color: #222; }
+
+    .progress-bar {
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #5cb85c);
+        transition: width 0.3s;
+    }
+    .progress-text { font-size: 11px; color: #666; text-align: right; margin-bottom: 12px; }
+
+    .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .actions .btn { width: 100%; }
+    .secondary-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .steps-list {
+        background: white;
+        border-radius: 4px;
+        padding: 8px;
+        max-height: 140px;
+        overflow-y: auto;
+        margin-top: 12px;
+    }
+    .step-item {
+        padding: 6px 8px;
+        font-size: 11px;
+        border-radius: 3px;
+        margin-bottom: 2px;
+        color: #666;
+    }
+    .step-item.active { background: #e7f1ff; color: #0066cc; font-weight: 600; }
+    .step-item.completed { color: #28a745; text-decoration: line-through; opacity: 0.7; }
+
+    #testInactive { text-align: center; padding: 30px 16px; color: #888; }
+    #testInactive .icon { font-size: 40px; margin-bottom: 10px; }
+
+    /* Gallery */
+    .gallery-stats {
+        background: white;
+        padding: 10px 12px;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        font-size: 12px;
+        border-left: 3px solid #0066cc;
+    }
+    .gallery-stats strong { color: #0066cc; }
+
+    .resultado-box {
+        background: white;
+        border: 1px solid #ccc;
+        border-left: 4px solid #28a745;
+        border-radius: 4px;
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    .resultado-box label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #155724;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+    }
+    .resultado-box textarea { margin-bottom: 8px; min-height: 70px; }
+    .resultado-box .btn { width: auto; }
+
+    .gallery-item {
+        background: white;
+        border-radius: 4px;
+        margin-bottom: 8px;
+        overflow: hidden;
+        border: 1px solid #e0e0e0;
+    }
+    .gallery-item-header {
+        padding: 8px 10px;
+        background: #f0f0f0;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .gallery-item img { width: 100%; display: block; }
+    .empty-gallery { text-align: center; padding: 30px; color: #888; }
+
+    /* Debug modal */
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content {
+        background: white;
+        border-radius: 6px;
+        padding: 16px;
+        width: 380px;
+        max-height: 90vh;
+        overflow: auto;
+    }
+    .modal h3 { margin-bottom: 10px; font-size: 14px; }
+    .modal textarea { height: 240px; font-family: monospace; font-size: 10px; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+
+    .footer-bar {
+        font-size: 10px;
+        color: #999;
+        text-align: center;
+        padding: 8px;
+        border-top: 1px solid #e0e0e0;
+        background: white;
+    }
+    .footer-bar a { color: #0066cc; cursor: pointer; text-decoration: underline; }
+
+    /* Reutilizar evidencia */
+    .reuse-toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: #fff8e1;
+        border: 1px solid #ffe082;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        user-select: none;
+    }
+    .reuse-toggle-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #f59e0b; }
+    .reuse-toggle-row span { font-size: 12px; font-weight: 700; color: #92400e; }
+    .reuse-panel {
+        background: #fffbeb;
+        border: 1px solid #ffe082;
+        border-top: none;
+        border-radius: 0 0 5px 5px;
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+    .reuse-panel .section-divider { color: #d97706; border-top-color: #ffe082; }
+
+    /* Gestión de pasos */
+    .step-mgmt-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid #e0e0e0;
+        flex-wrap: wrap;
+    }
+    .mgmt-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #999; }
+    .btn-xs {
+        padding: 4px 9px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.15s;
+    }
+    .btn-xs-sec { background: #e9ecef; color: #333; border-color: #ccc; }
+    .btn-xs-sec:hover { background: #dee2e6; }
+    .btn-xs-del { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+    .btn-xs-del:hover { background: #f5c6cb; }
+    .step-editor-panel {
+        margin-top: 10px;
+        background: white;
+        border: 1px solid #0066cc;
+        border-radius: 4px;
+        padding: 10px;
+    }
+    .step-editor-panel input {
+        width: 100%;
+        padding: 7px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 13px;
+        font-family: inherit;
+        margin-bottom: 8px;
+        box-sizing: border-box;
+    }
+    .step-editor-panel input:focus { border-color: #0066cc; outline: none; }
+    .step-editor-actions { display: flex; gap: 8px; }
+
+    /* Notas por paso */
+    .step-note-area {
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px dashed #d0e4ff;
+    }
+    .step-note-area textarea {
+        width: 100%;
+        min-height: 52px;
+        padding: 6px 9px;
+        border: 1px solid #cce0ff;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: inherit;
+        resize: vertical;
+        margin-bottom: 6px;
+        background: #f0f7ff;
+        color: #333;
+        box-sizing: border-box;
+    }
+    .step-note-area textarea:focus { border-color: #0066cc; outline: none; background: #fff; }
+    .step-note-saved { font-size: 10px; color: #28a745; margin-left: 6px; display: none; }
+
+    /* Importar desde planilla */
+    .import-section { margin-bottom: 4px; }
+    .import-toggle {
+        width: 100%;
+        text-align: left;
+        background: linear-gradient(135deg, #e8f4fd, #d6eaf8);
+        border: 1px solid #aed6f1;
+        border-radius: 5px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #1a5276;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: background 0.15s;
+    }
+    .import-toggle:hover { background: linear-gradient(135deg, #d6eaf8, #aed6f1); }
+    .import-panel {
+        border: 1px solid #aed6f1;
+        border-top: none;
+        border-radius: 0 0 5px 5px;
+        padding: 12px;
+        background: #f0f8ff;
+        margin-bottom: 10px;
+    }
+    .import-hint {
+        font-size: 10px;
+        color: #555;
+        background: white;
+        border: 1px solid #d6eaf8;
+        border-radius: 4px;
+        padding: 7px 9px;
+        margin-bottom: 8px;
+        line-height: 1.5;
+    }
+    .import-hint strong { color: #1a5276; }
+    .import-hint .col-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px 6px;
+        margin-top: 5px;
+    }
+    .import-hint .col-tag {
+        background: #d6eaf8;
+        color: #1a5276;
+        padding: 1px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .import-panel textarea {
+        width: 100%;
+        min-height: 52px;
+        padding: 7px 9px;
+        border: 1px solid #aed6f1;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: 'Consolas', monospace;
+        resize: vertical;
+        margin-bottom: 8px;
+        box-sizing: border-box;
+    }
+    #importMessage { margin-top: 8px; }
+
+    /* Selector de flujo */
+    .import-flow-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .flow-label { font-size: 11px; font-weight: 700; color: #1a5276; }
+    .flow-toggle {
+        display: flex;
+        border: 1px solid #aed6f1;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .flow-opt {
+        padding: 4px 14px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #1a5276;
+        background: white;
+        border: none;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .flow-opt + .flow-opt { border-left: 1px solid #aed6f1; }
+    .flow-opt:hover { background: #d6eaf8; }
+    .flow-opt.active { background: #1a5276; color: white; }
+
+    /* Preview table */
+    .import-preview {
+        margin-bottom: 10px;
+        border: 1px solid #aed6f1;
+        border-radius: 4px;
+        overflow: hidden;
+        background: white;
+    }
+    .import-preview-title {
+        background: #1a5276;
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 4px 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+    .import-preview table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+    }
+    .import-preview td {
+        padding: 4px 8px;
+        border-bottom: 1px solid #e8f4fd;
+        vertical-align: top;
+    }
+    .import-preview tr:last-child td { border-bottom: none; }
+    .import-preview .col-name {
+        width: 38%;
+        font-weight: 700;
+        color: #1a5276;
+        white-space: nowrap;
+        background: #f0f8ff;
+    }
+    .import-preview .col-num {
+        font-size: 9px;
+        color: #aaa;
+        font-weight: 400;
+        margin-right: 3px;
+    }
+    .import-preview .col-val { color: #222; line-height: 1.4; }
+    .import-preview .col-val.is-empty {
+        color: #bbb;
+        font-style: italic;
+    }
+    .import-preview .col-val.is-multiline { white-space: pre-wrap; }
+    .import-preview .val-lines {
+        display: inline-block;
+        background: #d6eaf8;
+        color: #1a5276;
+        font-size: 9px;
+        font-weight: 700;
+        padding: 0px 4px;
+        border-radius: 3px;
+        margin-left: 4px;
+        vertical-align: middle;
+    }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>📸 QA Test Evidence JSONFIE</h1>
+    <div class="subtitle">v7.4</div>
+</div>
+
+<div class="tabs">
+    <button class="tab-btn active" data-tab="config">⚙️ Config Test</button>
+    <button class="tab-btn" data-tab="test">🧪 Prueba</button>
+    <button class="tab-btn" data-tab="gallery">🖼️ Reporte</button>
+</div>
+
+<!-- TAB: CONFIG -->
+<div id="config-tab" class="tab-content active">
+
+    <!-- IMPORTAR DESDE PLANILLA -->
+    <div class="import-section">
+        <button id="importToggle" class="import-toggle">📋 Importar desde planilla de Excel ▸</button>
+        <div id="importPanel" class="import-panel" style="display:none;">
+            <div class="import-flow-bar">
+                <span class="flow-label">Flujo:</span>
+                <div class="flow-toggle">
+                    <button class="flow-opt active" data-flow="front">🖥️ Front</button>
+                    <button class="flow-opt"        data-flow="back">⚙️ Back</button>
+                </div>
+            </div>
+            <div class="import-hint">
+                <strong>Copia una fila de tu planilla y pégala aquí.</strong>
+                Columnas esperadas en orden:
+                <div id="importColList" class="col-list"></div>
+            </div>
+            <textarea id="importInput" placeholder="Pega aquí la fila copiada de Excel (Ctrl+V)…"></textarea>
+            <div id="importPreview" class="import-preview" style="display:none;">
+                <div class="import-preview-title">👁️ Vista previa — verifica que los campos sean correctos</div>
+                <table id="importPreviewTable"></table>
+            </div>
+            <button id="importBtn" class="btn btn-primary" style="width:100%;">⚡ Confirmar e importar campos</button>
+            <div id="importMessage" class="message"></div>
+        </div>
+    </div>
+
+    <div class="section-divider">Identificación del caso</div>
+
+    <div class="form-row col-id">
+        <div class="form-group">
+            <label for="idEscenario">ID Escenario</label>
+            <input type="text" id="idEscenario" placeholder="ESC-001">
+        </div>
+        <div class="form-group">
+            <label for="nombreEscenario">Nombre del Escenario</label>
+            <input type="text" id="nombreEscenario" placeholder="Nombre del escenario">
+        </div>
+    </div>
+
+    <div class="form-row col-id">
+        <div class="form-group">
+            <label for="idCaso">ID Caso</label>
+            <input type="text" id="idCaso" placeholder="CP-001">
+        </div>
+        <div class="form-group">
+            <label for="nombreCaso">Nombre del Caso</label>
+            <input type="text" id="nombreCaso" placeholder="Nombre del caso de prueba">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="proyecto">Proyecto / Requerimiento <span style="color:#dc3545;">*</span></label>
+        <input type="text" id="proyecto" placeholder="Nombre del proyecto o requerimiento">
+    </div>
+
+    <div class="form-row col-2">
+        <div class="form-group">
+            <label for="funcionalidad">Funcionalidad <span style="color:#dc3545;">*</span></label>
+            <input type="text" id="funcionalidad" placeholder="Módulo o funcionalidad">
+        </div>
+        <div class="form-group">
+            <label for="categorizacion">Categorización</label>
+            <input type="text" id="categorizacion" list="categoriaOptions" placeholder="Bajo / Medio / Alto">
+            <datalist id="categoriaOptions">
+                <option value="Bajo">
+                <option value="Medio">
+                <option value="Alto">
+            </datalist>
+        </div>
+    </div>
+
+    <div class="form-row col-2">
+        <div class="form-group">
+            <label for="version">Versión</label>
+            <select id="version">
+                <option value="">— Selecciona —</option>
+                <option value="Desktop">Desktop</option>
+                <option value="Mobile">Mobile</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="navegador">Navegador</label>
+            <select id="navegador">
+                <option value="">— Selecciona —</option>
+                <option value="Chrome">Chrome</option>
+                <option value="Mozilla Firefox">Mozilla Firefox</option>
+                <option value="Microsoft Edge">Microsoft Edge</option>
+                <option value="Safari">Safari</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="section-divider">Detalle de la prueba</div>
+
+    <div class="form-group">
+        <label for="precondiciones">Precondiciones</label>
+        <textarea id="precondiciones" class="short" placeholder="Condiciones previas necesarias para ejecutar la prueba…"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="datosPrueba">Datos de prueba</label>
+        <textarea id="datosPrueba" class="short" placeholder="Usuario, contraseña, datos específicos a usar…"></textarea>
+    </div>
+
+    <div class="form-group" id="httpEsperadoGroup" style="display:none;">
+        <label for="httpEsperado">HTTP Esperado</label>
+        <input type="text" id="httpEsperado" placeholder="Ej: 200 OK, 404 Not Found…">
+    </div>
+
+    <div class="form-group">
+        <label for="resultadoEsperado">Resultado esperado</label>
+        <textarea id="resultadoEsperado" class="short" placeholder="Qué debería ocurrir al ejecutar correctamente la prueba…"></textarea>
+    </div>
+
+    <div class="section-divider">Configuración técnica</div>
+
+    <div class="form-group">
+        <label for="url">URL de la aplicación</label>
+        <input type="text" id="url" placeholder="https://...">
+    </div>
+
+    <div class="form-group">
+        <label for="steps">Pasos (uno por línea, iniciando con *)</label>
+        <textarea id="steps" class="steps-input" placeholder="* Paso 1&#10;* Paso 2&#10;* Paso 3"></textarea>
+    </div>
+
+    <label for="quality">Calidad JPEG</label>
+    <input type="text" id="quality" value="0.75" style="width: 80px; display: inline-block;">
+    <span style="font-size: 11px; color: #666;">Recomendado: 0.6 – 0.85</span>
+    <div style="height: 12px;"></div>
+
+    <button id="loadSteps" class="btn btn-primary">▶ Iniciar prueba</button>
+    <div id="configMessage" class="message"></div>
+</div>
+
+<!-- TAB: TEST -->
+<div id="test-tab" class="tab-content">
+    <div id="testInactive">
+        <div class="icon">🧪</div>
+        <p>No hay prueba activa.<br>Configura una en la pestaña <strong>Config</strong>.</p>
+    </div>
+    <div id="testActive" style="display:none;">
+        <div class="step-card">
+            <div id="stepNumber">Paso 1</div>
+            <div id="stepText">—</div>
+            <div class="step-note-area">
+                <textarea id="stepNoteInput" placeholder="📝 Nota del paso (opcional)…"></textarea>
+                <button id="saveNoteBtn" class="btn-xs btn-xs-sec">💾 Guardar nota</button>
+                <span id="noteSavedLabel" class="step-note-saved">✓ Guardado</span>
+            </div>
+        </div>
+        <div class="progress-bar"><div id="progressFill" class="progress-fill" style="width:0%"></div></div>
+        <div class="progress-text"><span id="stepCounter">0/0</span> pasos</div>
+
+        <div class="actions">
+            <button id="captureBtn" class="btn btn-success">📸 Capturar</button>
+            <button id="prevBtn"    class="btn btn-secondary">← Anterior</button>
+            <button id="nextBtn"    class="btn btn-primary">Siguiente →</button>
+        </div>
+        <button id="deleteStepEvidenceBtn" class="btn btn-danger btn-sm" style="display:none;width:100%;margin-bottom:10px;">🗑️ Eliminar evidencia de este paso y re-capturar</button>
+        <div class="secondary-actions">
+            <button id="stopBtn" class="btn btn-warning">⏹ Detener</button>
+            <button id="resetBtn" class="btn btn-danger">🔄 Reiniciar</button>
+        </div>
+
+        <div class="steps-list" id="stepsList"></div>
+
+        <div class="step-mgmt-bar">
+            <span class="mgmt-label">Pasos:</span>
+            <button id="editStepBtn" class="btn-xs btn-xs-sec" title="Editar texto del paso actual">✏️ Editar</button>
+            <button id="addStepBtn"  class="btn-xs btn-xs-sec" title="Insertar un paso después del actual">➕ Insertar</button>
+            <button id="deleteStepBtn" class="btn-xs btn-xs-del" title="Eliminar el paso actual">🗑️ Eliminar</button>
+        </div>
+
+        <div id="stepEditorPanel" class="step-editor-panel" style="display:none;">
+            <input type="text" id="stepEditorInput" placeholder="Texto del paso…">
+            <div class="step-editor-actions">
+                <button id="confirmStepEdit" class="btn btn-success btn-sm">✓ Guardar</button>
+                <button id="cancelStepEdit"  class="btn btn-secondary btn-sm">✕ Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB: GALLERY -->
+<div id="gallery-tab" class="tab-content">
+    <div id="galleryStats" class="gallery-stats">Cargando…</div>
+
+    <div class="resultado-box">
+        <label for="resultadoEjecucion">Resultado de la ejecución</label>
+        <textarea id="resultadoEjecucion" placeholder="Describe el resultado de la ejecución: exitoso, fallido, observaciones…"></textarea>
+        <button id="saveResultadoBtn" class="btn btn-success btn-sm">💾 Guardar resultado</button>
+    </div>
+
+    <!-- Reutilizar evidencia para otro caso -->
+    <label class="reuse-toggle-row">
+        <input type="checkbox" id="reuseCheck">
+        <span>♻️ Reutilizar esta evidencia para otro caso de prueba</span>
+    </label>
+    <div id="reusePanel" class="reuse-panel" style="display:none;">
+        <div class="section-divider">Nuevo caso — solo aplica al reporte</div>
+        <div class="form-row col-id" style="margin-bottom:8px;">
+            <div class="form-group">
+                <label for="rIdEscenario">ID Escenario</label>
+                <input type="text" id="rIdEscenario" placeholder="ESC-001">
+            </div>
+            <div class="form-group">
+                <label for="rNombreEscenario">Nombre del Escenario</label>
+                <input type="text" id="rNombreEscenario" placeholder="Nombre del escenario">
+            </div>
+        </div>
+        <div class="form-row col-id" style="margin-bottom:8px;">
+            <div class="form-group">
+                <label for="rIdCaso">ID Caso</label>
+                <input type="text" id="rIdCaso" placeholder="CP-001">
+            </div>
+            <div class="form-group">
+                <label for="rNombreCaso">Nombre del Caso</label>
+                <input type="text" id="rNombreCaso" placeholder="Nombre del caso de prueba">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="rPrecondiciones">Precondiciones</label>
+            <textarea id="rPrecondiciones" class="short" placeholder="Condiciones previas…"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="rDatosPrueba">Datos de prueba</label>
+            <textarea id="rDatosPrueba" class="short" placeholder="Usuario, contraseña, datos específicos…"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="rResultadoEsperado">Resultado esperado</label>
+            <textarea id="rResultadoEsperado" class="short" placeholder="Qué debería ocurrir…"></textarea>
+        </div>
+    </div>
+
+    <button id="exportBtn" class="btn btn-primary">📥 Exportar reporte HTML</button>
+    <div style="height: 12px;"></div>
+    <div id="galleryContainer"></div>
+</div>
+
+<!-- DEBUG MODAL -->
+<div id="debugModal" class="modal">
+    <div class="modal-content">
+        <h3>🔧 Debug logs</h3>
+        <textarea id="debugText" readonly></textarea>
+        <div class="modal-actions">
+            <button id="clearDebugBtn" class="btn btn-danger">🗑️ Limpiar</button>
+            <button id="copyDebugBtn" class="btn btn-secondary">Copiar</button>
+            <button id="closeDebugBtn" class="btn btn-primary">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<div class="footer-bar">
+    <a id="showDebugBtn">🔧 Ver debug logs</a> ·
+    <a id="storageInfoBtn">💾 Info de almacenamiento</a>
+</div>
+
+<script src="db.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

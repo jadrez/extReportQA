@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "QA Test Evidence JSONFIE",
+  "version": "7.4",
+  "description": "Captura evidencias QA con getDisplayMedia (Chrome MV3 offscreen), JPEG e IndexedDB",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "tabs",
+    "offscreen",
+    "downloads"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "icons": {
+    "16": "images/icon-16.png",
+    "48": "images/icon-48.png",
+    "128": "images/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "QA Test Evidence JSONFIE v7.4"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["popup-window.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

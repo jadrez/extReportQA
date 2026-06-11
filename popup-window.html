@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>QA Tracker JSONFIE</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f8f9fa;
+        color: #222;
+        padding: 12px;
+        font-size: 13px;
+    }
+    .header {
+        background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+        color: white;
+        padding: 10px 14px;
+        border-radius: 6px 6px 0 0;
+        font-weight: 700;
+        margin: -12px -12px 12px;
+    }
+    .step-card {
+        background: white;
+        padding: 12px;
+        border-radius: 6px;
+        border-left: 4px solid #0066cc;
+        margin-bottom: 12px;
+    }
+    .step-label {
+        font-size: 10px;
+        color: #666;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+    .step-number { font-size: 14px; font-weight: 700; color: #0066cc; margin-bottom: 4px; }
+    .step-text { font-size: 12px; color: #222; line-height: 1.35; }
+    .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    .btn {
+        padding: 10px;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        font-weight: 600;
+        font-size: 12px;
+        cursor: pointer;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-capture { background: #28a745; }
+    .btn-prev    { background: #6c757d; }
+    .btn-next    { background: #0066cc; }
+    .hint {
+        font-size: 10px;
+        color: #666;
+        text-align: center;
+        padding-top: 8px;
+        border-top: 1px solid #e0e0e0;
+    }
+    .status {
+        font-size: 11px;
+        color: #555;
+        padding: 6px 10px;
+        background: #fff;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        text-align: center;
+        display: none;
+    }
+    .status.show { display: block; }
+    .status.success { background: #d4edda; color: #155724; }
+    .status.error   { background: #f8d7da; color: #721c24; }
+    .capture-count-bar {
+        display: none;
+        margin-top: 8px;
+        padding: 5px 8px;
+        background: #e7f1ff;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #0052a3;
+        text-align: center;
+    }
+    .btn-capture.has-captures { background: #218838; }
+    .btn-capture.is-capturing { background: #6c757d; cursor: not-allowed; }
+    .mgmt-bar {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 10px;
+        padding: 5px 8px;
+        background: white;
+        border-radius: 4px;
+        border: 1px solid #e0e0e0;
+    }
+    .btn-w {
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        line-height: 1.4;
+    }
+    .btn-w-sec { background: #e9ecef; color: #333; border-color: #ccc; }
+    .btn-w-sec:hover { background: #dee2e6; }
+    .btn-w-del { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+    .btn-w-del:hover { background: #f5c6cb; }
+    .mgmt-hint { font-size: 10px; color: #bbb; margin-left: auto; }
+    .step-editor-w {
+        background: white;
+        border: 1px solid #0066cc;
+        border-radius: 4px;
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+    .step-editor-w input {
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        font-size: 12px;
+        font-family: inherit;
+        margin-bottom: 6px;
+        box-sizing: border-box;
+    }
+    .step-editor-w input:focus { border-color: #0066cc; outline: none; }
+    .step-editor-w-actions { display: flex; gap: 6px; }
+    .step-note-w {
+        margin-top: 8px;
+        padding-top: 7px;
+        border-top: 1px dashed #d0e4ff;
+    }
+    .step-note-w textarea {
+        width: 100%;
+        min-height: 44px;
+        padding: 5px 8px;
+        border: 1px solid #cce0ff;
+        border-radius: 3px;
+        font-size: 11px;
+        font-family: inherit;
+        resize: vertical;
+        background: #f0f7ff;
+        color: #333;
+        box-sizing: border-box;
+        margin-bottom: 5px;
+    }
+    .step-note-w textarea:focus { border-color: #0066cc; outline: none; background: #fff; }
+    .info-bar {
+        background: #1a1a2e;
+        color: #e0e0e0;
+        font-size: 11px;
+        padding: 6px 12px;
+        margin: -12px -12px 12px;
+        display: flex;
+        align-items: center;
+        gap: 0;
+        flex-wrap: wrap;
+        row-gap: 2px;
+    }
+    .info-bar .info-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+    }
+    .info-bar .info-sep {
+        color: #555;
+        margin: 0 8px;
+        font-weight: 300;
+    }
+    .info-bar .info-time {
+        color: #7ec8e3;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.3px;
+    }
+    .info-bar .info-date { color: #aaa; }
+    .info-bar .info-tag {
+        background: #2d2d4e;
+        color: #a78bfa;
+        padding: 1px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    /* ===== Anotaciones ===== */
+    .annotate-trigger {
+        display: none;
+        width: 100%;
+        margin-bottom: 8px;
+        padding: 7px;
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #856404;
+        cursor: pointer;
+        text-align: center;
+    }
+    .annotate-trigger:hover { background: #ffe69c; }
+    .annotate-trigger.show { display: block; }
+
+    .annotate-panel {
+        display: none;
+        background: #1a1a2e;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        overflow: hidden;
+    }
+    .annotate-panel.show { display: block; }
+
+    .annotate-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 8px;
+        background: #16213e;
+        flex-wrap: wrap;
+    }
+    .ann-tool {
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        border: 2px solid transparent;
+        background: #2d2d4e;
+        color: #ccc;
+        transition: all 0.1s;
+    }
+    .ann-tool:hover  { background: #3d3d6e; color: #fff; }
+    .ann-tool.active { border-color: #3b82f6; color: #fff; background: #1e3a5f; }
+
+    .ann-sep { width: 1px; height: 18px; background: #444; margin: 0 2px; }
+
+    .ann-color {
+        width: 18px; height: 18px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: border-color 0.1s;
+        flex-shrink: 0;
+    }
+    .ann-color.active { border-color: #fff; }
+
+    .ann-lw {
+        padding: 2px 6px;
+        font-size: 10px;
+        font-weight: 700;
+        color: #aaa;
+        background: #2d2d4e;
+        border: 1px solid #444;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+    .ann-lw.active { background: #1e3a5f; color: #7ec8e3; border-color: #3b82f6; }
+
+    .ann-undo {
+        margin-left: auto;
+        padding: 3px 7px;
+        font-size: 10px;
+        font-weight: 700;
+        color: #aaa;
+        background: #2d2d4e;
+        border: 1px solid #444;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+    .ann-undo:hover { background: #3d3d4e; color: #fff; }
+
+    .annotate-canvas-wrap {
+        position: relative;
+        background: #000;
+        line-height: 0;
+    }
+    #annotateCanvas {
+        display: block;
+        width: 100%;
+        cursor: crosshair;
+        touch-action: none;
+    }
+
+    .annotate-actions {
+        display: flex;
+        gap: 6px;
+        padding: 7px 8px;
+        background: #16213e;
+    }
+    .ann-btn {
+        flex: 1;
+        padding: 7px;
+        border: none;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    .ann-btn-save   { background: #28a745; color: #fff; }
+    .ann-btn-save:hover { background: #218838; }
+    .ann-btn-skip   { background: #495057; color: #ccc; }
+    .ann-btn-skip:hover { background: #5a6268; }
+</style>
+</head>
+<body>
+<div class="header">📸 QA Tracker</div>
+
+<div class="info-bar" id="infoBar">
+    <div class="info-item">
+        <span>📅</span>
+        <span class="info-date" id="infoDate">—</span>
+    </div>
+    <span class="info-sep">|</span>
+    <div class="info-item">
+        <span>🕐</span>
+        <span class="info-time" id="infoClock">—</span>
+    </div>
+    <span class="info-sep" id="sepVersion" style="display:none;">|</span>
+    <div class="info-item" id="infoVersionWrap" style="display:none;">
+        <span>💻</span>
+        <span class="info-tag" id="infoVersion"></span>
+    </div>
+    <span class="info-sep" id="sepNavegador" style="display:none;">|</span>
+    <div class="info-item" id="infoNavegadorWrap" style="display:none;">
+        <span>🌐</span>
+        <span class="info-tag" id="infoNavegador"></span>
+    </div>
+</div>
+
+<div id="status" class="status"></div>
+<div class="step-card">
+    <div class="step-label">Paso actual</div>
+    <div class="step-number" id="stepNumber">—</div>
+    <div class="step-text" id="stepText">Cargando…</div>
+    <div id="captureCountBar" class="capture-count-bar"></div>
+    <div class="step-note-w">
+        <textarea id="wStepNoteInput" placeholder="📝 Nota del paso (opcional)…"></textarea>
+        <button id="wSaveNoteBtn" class="btn-w btn-w-sec">💾 Guardar nota</button>
+    </div>
+</div>
+<div class="mgmt-bar">
+    <button id="wEditStepBtn"   class="btn-w btn-w-sec" title="Editar paso actual">✏️ Editar</button>
+    <button id="wAddStepBtn"    class="btn-w btn-w-sec" title="Insertar paso después del actual">➕ Insertar</button>
+    <button id="wDeleteStepBtn" class="btn-w btn-w-del" title="Eliminar paso actual">🗑️</button>
+    <span class="mgmt-hint">Gestionar pasos</span>
+</div>
+
+<div id="wStepEditorPanel" class="step-editor-w" style="display:none;">
+    <input type="text" id="wStepEditorInput" placeholder="Texto del paso…">
+    <div class="step-editor-w-actions">
+        <button id="wConfirmStepEdit" class="btn btn-capture" style="padding:5px 14px;font-size:11px;">✓ Guardar</button>
+        <button id="wCancelStepEdit"  class="btn" style="background:#6c757d;padding:5px 12px;font-size:11px;">✕</button>
+    </div>
+</div>
+
+<!-- Trigger anotación -->
+<button id="annotateTrigger" class="annotate-trigger">✏️ Anotar última captura</button>
+
+<!-- Panel de anotación -->
+<div id="annotatePanel" class="annotate-panel">
+    <div class="annotate-toolbar">
+        <button class="ann-tool active" data-tool="rect"  title="Rectángulo">▭ Rect</button>
+        <button class="ann-tool"        data-tool="arrow" title="Flecha">↗ Flecha</button>
+        <div class="ann-sep"></div>
+        <div class="ann-color active" data-color="#ef4444" style="background:#ef4444;" title="Rojo"></div>
+        <div class="ann-color"        data-color="#facc15" style="background:#facc15;" title="Amarillo"></div>
+        <div class="ann-color"        data-color="#22c55e" style="background:#22c55e;" title="Verde"></div>
+        <div class="ann-color"        data-color="#3b82f6" style="background:#3b82f6;" title="Azul"></div>
+        <div class="ann-sep"></div>
+        <button class="ann-lw active" data-lw="2" title="Fino">—</button>
+        <button class="ann-lw"        data-lw="4" title="Grueso">━</button>
+        <button class="ann-undo" id="annUndoBtn" title="Deshacer">↩ Undo</button>
+    </div>
+    <div class="annotate-canvas-wrap">
+        <canvas id="annotateCanvas"></canvas>
+    </div>
+    <div class="annotate-actions">
+        <button class="ann-btn ann-btn-save" id="annSaveBtn">💾 Guardar anotación</button>
+        <button class="ann-btn ann-btn-skip" id="annSkipBtn">⏭ Saltar</button>
+    </div>
+</div>
+
+<div class="actions">
+    <button id="captureBtn" class="btn btn-capture">📸 Capturar</button>
+    <button id="prevBtn"    class="btn btn-prev">← Anterior</button>
+    <button id="nextBtn"    class="btn btn-next">Siguiente →</button>
+</div>
+<button id="wDeleteEvidenceBtn" class="btn-w btn-w-del" style="display:none;width:100%;margin-bottom:8px;text-align:center;">🗑️ Eliminar evidencia de este paso y re-capturar</button>
+<div class="hint">Presiona <strong>SPACE</strong> para capturar</div>
+
+<script src="db.js"></script>
+<script src="popup-window.js"></script>
+</body>
+</html>
